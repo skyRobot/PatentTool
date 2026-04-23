@@ -263,6 +263,15 @@ h3 {
   font-weight: 800;
 }
 
+.section-label {
+  display: inline-block;
+  color: var(--cedar);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 input,
 textarea {
   width: 100%;
@@ -419,6 +428,57 @@ textarea:focus {
 .chip.is-selected {
   color: var(--paper-strong);
   background: var(--blue);
+}
+
+.first-pass-intro {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+  margin: 18px 0 14px;
+  border-top: 1px solid rgba(23, 32, 27, 0.08);
+  padding-top: 18px;
+}
+
+.first-pass-intro p {
+  max-width: 540px;
+  margin: 8px 0 0;
+}
+
+.pill.subtle {
+  color: var(--cedar);
+  background: rgba(139, 81, 53, 0.1);
+}
+
+.first-pass-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.first-pass-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 250, 240, 0.9), rgba(255, 250, 240, 0.55)),
+    rgba(255, 250, 240, 0.7);
+}
+
+.first-pass-card span {
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.first-pass-card textarea {
+  min-height: 120px;
+  padding: 14px 15px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.58);
 }
 
 .challenge-banner {
@@ -619,6 +679,7 @@ textarea:focus {
   .workspace,
   .split,
   .grid.two,
+  .first-pass-grid,
   .defect-grid,
   .report-layout,
   .summary-grid {
@@ -640,7 +701,8 @@ textarea:focus {
   .panel-header,
   .panel-footer,
   .section-intro,
-  .challenge-banner {
+  .challenge-banner,
+  .first-pass-intro {
     align-items: stretch;
     flex-direction: column;
   }

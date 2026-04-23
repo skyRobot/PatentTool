@@ -126,11 +126,14 @@
                   <span>Likely inventive concept</span>
                   <textarea id="inventive-concept" placeholder="In my view, the inventive concept is..."></textarea>
                 </label>
-                <div class="chips" id="concern-chips"></div>
-                <label class="field">
-                  <span>Initial concerns</span>
-                  <textarea id="first-pass-notes" placeholder="Clarity, support, unity, search angles, or no issue identified..."></textarea>
-                </label>
+                <div class="first-pass-intro">
+                  <div>
+                    <span class="section-label">Initial defect scan</span>
+                    <p>Capture each concern in its own lane so the baseline is easier to review before the AI reveal.</p>
+                  </div>
+                  <span class="pill subtle" id="first-pass-count">0 noted</span>
+                </div>
+                <div id="first-pass-grid" class="first-pass-grid"></div>
                 <button class="primary dark" id="complete-first-pass">Lock First Pass & Reveal AI</button>
               </article>
             </div>

@@ -54,6 +54,7 @@ const state = {
   analysisRows: [],
   firstPassLocked: false,
   selectedConcerns: new Set(),
+  firstPassNotes: {},
   defectDecisions: {},
   reportTextEdited: false,
   score: 0,
@@ -171,10 +172,29 @@ function updateScore() {
   $("#score").textContent = state.score;
 }
 
-function renderConcerns() {
-  $("#concern-chips").innerHTML = concernTypes
-    .map((label) => `<button class="chip" type="button" data-concern="${label}">${label}</button>`)
+function renderFirstPassFields() {
+  $("#first-pass-grid").innerHTML = concernTypes
+    .map(
+      (label) => `
+        <label class="first-pass-card" for="first-pass-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}">
+          <span>${label}</span>
+          <textarea
+            id="first-pass-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}"
+            data-first-pass-note="${label}"
+            placeholder="Add examiner notes for ${label.toLowerCase()}, or leave blank if no issue is seen."
+          >${escapeHtml(state.firstPassNotes[label] || "")}</textarea>
+        </label>
+      `,
+    )
     .join("");
+  updateFirstPassCount();
+}
+
+function updateFirstPassCount() {
+  state.selectedConcerns = new Set(
+    concernTypes.filter((label) => (state.firstPassNotes[label] || "").trim()),
+  );
+  $("#first-pass-count").textContent = `${state.selectedConcerns.size} noted`;
 }
 
 function renderClaims() {
@@ -519,6 +539,20 @@ function renderSummary() {
     .join("");
 }
 
+function buildFirstPassNarrative() {
+  const concept = $("#inventive-concept").value.trim();
+  const noteLines = concernTypes
+    .map((label) => {
+      const note = (state.firstPassNotes[label] || "").trim();
+      return note ? `${label}: ${note}` : "";
+    })
+    .filter(Boolean);
+
+  return [concept ? `Inventive concept: ${concept}` : "", ...noteLines]
+    .filter(Boolean)
+    .join("\n");
+}
+
 function buildCase() {
   const claimsText = $("#claims-input").value;
   state.claims = parseClaims(claimsText);
@@ -564,7 +598,7 @@ async function runAiReview() {
       applicationNumber: $("#application-number").value,
       claims: $("#claims-input").value,
       description: $("#description-input").value,
-      firstPass: `${$("#inventive-concept").value}\n${$("#first-pass-notes").value}`,
+      firstPass: buildFirstPassNarrative(),
     });
 
     state.suggestions = normalizeSuggestions(payload.suggestions);
@@ -623,7 +657,10 @@ async function runPriorArtSearch() {
 }
 
 function init() {
-  renderConcerns();
+  concernTypes.forEach((label) => {
+    state.firstPassNotes[label] = "";
+  });
+  renderFirstPassFields();
   renderClaims();
   renderSuggestions();
   renderDefects();
@@ -644,13 +681,11 @@ function init() {
   $("#build-case").addEventListener("click", buildCase);
   $("#run-ai-review")?.addEventListener("click", runAiReview);
 
-  $("#concern-chips").addEventListener("click", (event) => {
-    const button = event.target.closest("[data-concern]");
-    if (!button) return;
-    const concern = button.dataset.concern;
-    if (state.selectedConcerns.has(concern)) state.selectedConcerns.delete(concern);
-    else state.selectedConcerns.add(concern);
-    button.classList.toggle("is-selected");
+  $("#first-pass-grid").addEventListener("input", (event) => {
+    const textarea = event.target.closest("[data-first-pass-note]");
+    if (!textarea) return;
+    state.firstPassNotes[textarea.dataset.firstPassNote] = textarea.value;
+    updateFirstPassCount();
   });
 
   $("#complete-first-pass").addEventListener("click", () => {
