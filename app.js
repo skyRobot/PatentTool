@@ -2,11 +2,11 @@ const phases = [
   { id: "intake", title: "Intake", kicker: "Phase 01" },
   { id: "first-pass", title: "Examiner First Pass", kicker: "Phase 02" },
   { id: "challenge", title: "AI Challenge Reveal", kicker: "Phase 03" },
-  { id: "claims", title: "Claim Understanding", kicker: "Phase 04" },
-  { id: "defects", title: "Defect Review", kicker: "Phase 05" },
-  { id: "search", title: "Prior-Art Search", kicker: "Phase 06" },
-  { id: "analysis", title: "Patentability Analysis", kicker: "Phase 07" },
-  { id: "closeout", title: "Closeout Checklist", kicker: "Phase 08" },
+  { id: "defects", title: "Defect Review", kicker: "Phase 04" },
+  { id: "search", title: "Prior-Art Search", kicker: "Phase 05" },
+  { id: "analysis", title: "Patentability Analysis", kicker: "Phase 06" },
+  { id: "closeout", title: "Closeout Checklist", kicker: "Phase 07" },
+  { id: "report", title: "Report Text", kicker: "Phase 08" },
   { id: "summary", title: "Session Summary", kicker: "Phase 09" },
 ];
 
@@ -54,8 +54,8 @@ const state = {
   analysisRows: [],
   firstPassLocked: false,
   selectedConcerns: new Set(),
-  claimMapApproved: false,
   defectDecisions: {},
+  reportTextEdited: false,
   score: 0,
 };
 
@@ -106,6 +106,7 @@ function switchPhase(index) {
   $("#progress-fill").style.width = `${((state.current + 1) / phases.length) * 100}%`;
 
   if (phase.id === "summary") renderSummary();
+  if (phase.id === "report") renderReportText();
   if (phase.id === "closeout") renderChecklist();
   if (phase.id === "analysis") renderAnalysis();
 }
@@ -164,9 +165,9 @@ function updateScore() {
   const decidedSuggestions = state.suggestions.filter((item) => item.decision).length;
   const reviewedDefects = Object.values(state.defectDecisions).filter(Boolean).length;
   const firstPass = state.firstPassLocked ? 15 : 0;
-  const claimMap = state.claimMapApproved ? 15 : 0;
   const candidates = state.candidates.filter((item) => item.relevance).length * 4;
-  state.score = firstPass + claimMap + decidedSuggestions * 10 + reviewedDefects * 4 + candidates;
+  const reportReady = $("#report-text")?.value.trim() ? 10 : 0;
+  state.score = firstPass + decidedSuggestions * 10 + reviewedDefects * 4 + candidates + reportReady;
   $("#score").textContent = state.score;
 }
 
@@ -178,13 +179,10 @@ function renderConcerns() {
 
 function renderClaims() {
   const preview = $("#claim-preview");
-  const claimMap = $("#claim-map");
-  const insightByNumber = new Map(state.claimInsights.map((insight) => [String(insight.number), insight]));
 
   if (!state.claims.length) {
     preview.className = "claim-preview empty";
     preview.textContent = "Build the package to preview parsed claims.";
-    claimMap.innerHTML = "";
     return;
   }
 
@@ -198,31 +196,6 @@ function renderClaims() {
           <span class="source-tag">${claim.dependency ? `Depends on claim ${claim.dependency}` : "Independent"} · ${claim.category}</span>
         </div>
       `,
-    )
-    .join("");
-
-  claimMap.innerHTML = state.claims
-    .map(
-      (claim) => {
-        const insight = insightByNumber.get(String(claim.number));
-        const limitations = insight?.limitations?.length ? insight.limitations : claim.limitations;
-        const supportCues = insight?.supportCues || [];
-        return `
-        <article class="claim-item">
-          <p class="eyebrow">Claim ${escapeHtml(claim.number)} · ${escapeHtml(insight?.category || claim.category)}</p>
-          <h3>${claim.dependency ? `Dependent from claim ${escapeHtml(claim.dependency)}` : "Independent claim"}</h3>
-          <textarea data-claim-edit="${escapeHtml(claim.number)}">${escapeHtml(claim.text)}</textarea>
-          <div>
-            ${limitations.map((limitation) => `<span class="limitation">${escapeHtml(limitation)}</span>`).join("")}
-          </div>
-          ${
-            supportCues.length
-              ? `<p><strong>Support cues:</strong> ${supportCues.map(escapeHtml).join("; ")}</p>`
-              : ""
-          }
-        </article>
-      `;
-      },
     )
     .join("");
 }
@@ -305,7 +278,7 @@ function renderSearch() {
           `,
         )
         .join("")
-    : `<div class="query">Approve or build a claim map to generate feature-based queries.</div>`;
+    : `<div class="query">Build the package to generate feature-based search queries.</div>`;
 
   renderCandidates();
 }
@@ -403,9 +376,9 @@ function renderChecklist() {
     ["Package created", state.claims.length > 0, "Claims and description have been pasted and parsed."],
     ["First pass locked", state.firstPassLocked, "Examiner-authored observations exist before AI reveal."],
     ["AI suggestions reviewed", state.suggestions.length && state.suggestions.every((item) => item.decision), "Each simulated AI suggestion has a decision."],
-    ["Claim map approved", state.claimMapApproved, "Claim breakdown was examiner approved or edited."],
     ["Defect categories reviewed", Object.values(state.defectDecisions).filter(Boolean).length >= 5, "Most core categories have been considered."],
     ["Evidence trail started", state.candidates.some((item) => item.relevance), "Prior-art candidates have examiner relevance decisions."],
+    ["Report text prepared", Boolean($("#report-text")?.value.trim()), "Copy-ready wording has been generated or drafted for the report."],
   ];
 
   $("#checklist").innerHTML = checks
@@ -422,6 +395,105 @@ function renderChecklist() {
       `,
     )
     .join("");
+}
+
+function getReviewedDefects() {
+  return Object.entries(state.defectDecisions)
+    .filter(([, decision]) => decision)
+    .map(([title, decision]) => ({ title, decision }));
+}
+
+function getAdoptedSuggestions() {
+  return state.suggestions.filter((item) => ["Accept", "Modify", "Uncertain"].includes(item.decision));
+}
+
+function getClaimReference(claimNumbers = []) {
+  if (claimNumbers.length) return `claim ${claimNumbers.join(", ")}`;
+  const independent = state.claims.find((claim) => !claim.dependency) || state.claims[0];
+  return independent ? `claim ${independent.number}` : "the claims";
+}
+
+function formatDefectParagraph(item) {
+  const claimRef = getClaimReference(item.claimNumbers);
+  const evidence = item.evidence ? ` The relevant basis for review is: ${item.evidence}.` : "";
+  const qualifier =
+    item.decision === "Uncertain"
+      ? "This matter should be confirmed before being maintained as an objection."
+      : "The applicant is invited to amend the claims or provide submissions addressing the issue.";
+
+  return `${item.type}: ${claimRef} requires review because ${item.detail}${evidence} ${qualifier}`;
+}
+
+function formatCategoryParagraph({ title, decision }) {
+  const prefix = decision === "No issue" ? "No objection is presently raised" : "The following matter is identified for examiner review";
+  const action =
+    decision === "Adopted issue"
+      ? "If maintained, the report should identify the affected claim language, the relevant passage of the description or drawing, and the reason the defect is considered material."
+      : decision === "Needs evidence"
+        ? "Additional evidence or a more specific claim passage should be added before this is included as a formal objection."
+        : decision === "Deferred"
+          ? "This point has been deferred and should be revisited before finalizing the examination report."
+          : "No further wording is required unless new information changes the analysis.";
+
+  return `${title}: ${prefix} in respect of this category. ${action}`;
+}
+
+function buildReportText() {
+  const appNumber = $("#application-number").value.trim() || "[application number]";
+  const claimSet = $("#claim-set").value.trim() || "[claim set/date]";
+  const adoptedSuggestions = getAdoptedSuggestions();
+  const reviewedDefects = getReviewedDefects();
+  const relevantCandidates = state.candidates.filter((candidate) => candidate.relevance === "Relevant");
+  const opening = [
+    "EXAMINER'S REPORT - DRAFT DEFECT WORDING",
+    "",
+    `Application: ${appNumber}`,
+    `Claims under examination: ${claimSet}`,
+    "",
+    "The following wording is prepared for examiner review and editing. Only objections supported by the application record, cited prior art, and the examiner's own analysis should be maintained in the report.",
+  ];
+
+  const defectText = adoptedSuggestions.length
+    ? adoptedSuggestions.map((item, index) => `${index + 1}. ${formatDefectParagraph(item)}`)
+    : ["No examiner-adopted AI challenge defects have been selected. Add examiner wording here if a defect is to be raised."];
+
+  const categoryText = reviewedDefects.length
+    ? reviewedDefects.map((item, index) => `${index + 1}. ${formatCategoryParagraph(item)}`)
+    : ["No defect categories have been marked as reviewed."];
+
+  const priorArtText = relevantCandidates.length
+    ? relevantCandidates.map(
+        (candidate, index) =>
+          `${index + 1}. ${candidate.title} (${candidate.date || "date to be verified"}): ${candidate.passage} Examiner to verify publication date, availability, and the precise mapping before relying on this reference.`,
+      )
+    : ["No prior-art reference has been marked relevant for report wording."];
+
+  return [
+    ...opening,
+    "",
+    "DEFECTS / OBJECTIONS FOR REPORT",
+    ...defectText,
+    "",
+    "TAXONOMY REVIEW NOTES",
+    ...categoryText,
+    "",
+    "PRIOR-ART NOTES, IF RELIED UPON",
+    ...priorArtText,
+    "",
+    "CLOSING WORDING",
+    "The applicant is invited to amend the application or provide submissions in response to the matters identified above. Any amendment should be clearly supported by the application as filed and should not introduce new matter.",
+  ].join("\n");
+}
+
+function renderReportText({ force = false } = {}) {
+  const reportText = $("#report-text");
+  if (!reportText) return;
+  if (!force && state.reportTextEdited && reportText.value.trim()) return;
+  reportText.value = buildReportText();
+  state.reportTextEdited = false;
+  $("#report-status").textContent = "Draft generated locally. Review and edit before copying into a report.";
+  $("#report-status").dataset.tone = "ok";
+  updateScore();
 }
 
 function renderSummary() {
@@ -454,8 +526,8 @@ function buildCase() {
   state.searchQueries = [];
   state.claimInsights = [];
   state.analysisRows = [];
-  state.claimMapApproved = false;
   state.candidates = [];
+  state.reportTextEdited = false;
   renderClaims();
   renderSuggestions();
   renderSearch();
@@ -501,6 +573,7 @@ async function runAiReview() {
     renderSuggestions();
     renderClaims();
     renderSearch();
+    renderReportText({ force: !state.reportTextEdited });
     updateScore();
     setApiStatus("Perplexity review loaded. Lock the first pass to reveal and judge the AI suggestions.", "ok");
   } catch (error) {
@@ -543,7 +616,7 @@ async function runPriorArtSearch() {
     renderAnalysis();
     updateScore();
     setApiStatus("Prior-art leads loaded. Treat them as search leads until examiner verified.", "ok");
-    switchPhase(5);
+    switchPhase(phases.findIndex((phase) => phase.id === "search"));
   } catch (error) {
     setApiStatus(error.message, "error");
   }
@@ -595,13 +668,8 @@ function init() {
     const suggestion = state.suggestions.find((item) => item.id === row.dataset.suggestion);
     suggestion.decision = button.textContent;
     renderSuggestions();
+    renderReportText({ force: !state.reportTextEdited });
     updateScore();
-  });
-
-  $("#approve-claim-map").addEventListener("click", () => {
-    state.claimMapApproved = true;
-    updateScore();
-    renderSearch();
   });
 
   $("#defect-grid").addEventListener("change", (event) => {
@@ -609,6 +677,7 @@ function init() {
     if (!select) return;
     state.defectDecisions[select.dataset.defect] = select.value;
     updateDefectCount();
+    renderReportText({ force: !state.reportTextEdited });
     updateScore();
   });
 
@@ -625,10 +694,29 @@ function init() {
     const candidate = state.candidates.find((item) => item.id === row.dataset.candidate);
     candidate.relevance = button.textContent;
     renderCandidates();
+    renderReportText({ force: !state.reportTextEdited });
     updateScore();
   });
 
   $("#refresh-checklist").addEventListener("click", renderChecklist);
+  $("#refresh-report").addEventListener("click", () => renderReportText({ force: true }));
+  $("#report-text").addEventListener("input", () => {
+    state.reportTextEdited = true;
+    updateScore();
+  });
+  $("#copy-report").addEventListener("click", async () => {
+    const reportText = $("#report-text");
+    if (!reportText.value.trim()) renderReportText({ force: true });
+    try {
+      await navigator.clipboard.writeText(reportText.value);
+      $("#report-status").textContent = "Report text copied to clipboard.";
+      $("#report-status").dataset.tone = "ok";
+    } catch {
+      reportText.select();
+      $("#report-status").textContent = "Clipboard access was blocked. The text is selected for manual copy.";
+      $("#report-status").dataset.tone = "warn";
+    }
+  });
 }
 
 init();

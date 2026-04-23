@@ -39,25 +39,25 @@
             <span>03</span>
             AI Challenge
           </button>
-          <button class="phase" data-phase="claims">
-            <span>04</span>
-            Claim Map
-          </button>
           <button class="phase" data-phase="defects">
-            <span>05</span>
+            <span>04</span>
             Defects
           </button>
           <button class="phase" data-phase="search">
-            <span>06</span>
+            <span>05</span>
             Search
           </button>
           <button class="phase" data-phase="analysis">
-            <span>07</span>
+            <span>06</span>
             Analysis
           </button>
           <button class="phase" data-phase="closeout">
-            <span>08</span>
+            <span>07</span>
             Closeout
+          </button>
+          <button class="phase" data-phase="report">
+            <span>08</span>
+            Report Text
           </button>
           <button class="phase" data-phase="summary">
             <span>09</span>
@@ -147,17 +147,6 @@
             <div id="suggestion-list" class="cards"></div>
           </section>
 
-          <section class="screen" id="claims">
-            <div class="section-intro">
-              <div>
-                <p class="eyebrow">Examiner-approved claim map</p>
-                <h3>Parsed claims and editable limitations</h3>
-              </div>
-              <button class="secondary" id="approve-claim-map">Approve Claim Map</button>
-            </div>
-            <div id="claim-map" class="claim-map"></div>
-          </section>
-
           <section class="screen" id="defects">
             <div class="section-intro">
               <div>
@@ -201,6 +190,30 @@
               <button class="secondary" id="refresh-checklist">Refresh Checklist</button>
             </div>
             <div id="checklist" class="checklist"></div>
+          </section>
+
+          <section class="screen" id="report">
+            <div class="section-intro">
+              <div>
+                <p class="eyebrow">Copy-ready office action text</p>
+                <h3>Canadian examiner-style defect wording</h3>
+              </div>
+              <div class="actions compact">
+                <button class="secondary" id="refresh-report">Regenerate Text</button>
+                <button class="primary dark" id="copy-report">Copy Text</button>
+              </div>
+            </div>
+            <div class="report-layout">
+              <article class="report-guidance">
+                <h3>Drafting guardrails</h3>
+                <p>Use this as a working draft for report preparation. Replace placeholders, confirm every statutory basis, and keep only examiner-adopted defects.</p>
+                <div id="report-status" class="api-status" role="status"></div>
+              </article>
+              <label class="field report-editor">
+                <span>Editable report text</span>
+                <textarea id="report-text" spellcheck="true"></textarea>
+              </label>
+            </div>
           </section>
 
           <section class="screen" id="summary">
