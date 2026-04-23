@@ -1,0 +1,5 @@
+.env
+node_modules/
+.DS_Store
+public-demo/
+public-demo.zip

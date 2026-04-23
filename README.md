@@ -30,4 +30,3 @@ For static hosting, upload `index.html`, `styles.css`, `app.js`, and optionally 
 ## Data note
 
 The public demo uses simulated suggestions only. Later Perplexity results should be treated as search leads and review candidates, not examiner-adopted conclusions.
-# PatentTool
