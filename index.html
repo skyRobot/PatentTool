@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Examination Flow MVP Demo</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Canadian patent examination prototype</p>
+          <h1>Examination Flow</h1>
+          <p class="hero-copy">
+            Version 3 starts with an AI defect pass, then rewards examiners for
+            finding what the AI missed and backing every adopted issue with evidence.
+          </p>
+        </div>
+        <aside class="trust-card">
+          <span>Public demo mode</span>
+          <strong>Dummy data only, no external API calls.</strong>
+          <p>Paste claims or load the sample case to walk through the examination
+            flow with simulated AI first-pass defects.</p>
+        </aside>
+      </section>
+
+      <section class="workspace">
+        <nav class="rail" aria-label="Examination phases">
+          <button class="phase is-active" data-phase="intake">
+            <span>01</span>
+            Intake
+          </button>
+          <button class="phase" data-phase="first-pass">
+            <span>02</span>
+            AI First Pass
+          </button>
+          <button class="phase" data-phase="challenge">
+            <span>03</span>
+            Examiner Challenge
+          </button>
+          <button class="phase" data-phase="defects">
+            <span>04</span>
+            Defects
+          </button>
+          <button class="phase" data-phase="search">
+            <span>05</span>
+            Search
+          </button>
+          <button class="phase" data-phase="analysis">
+            <span>06</span>
+            Analysis
+          </button>
+          <button class="phase" data-phase="closeout">
+            <span>07</span>
+            Closeout
+          </button>
+          <button class="phase" data-phase="report">
+            <span>08</span>
+            Report Text
+          </button>
+          <button class="phase" data-phase="summary">
+            <span>09</span>
+            Summary
+          </button>
+        </nav>
+
+        <div class="panel">
+          <header class="panel-header">
+            <div>
+              <p class="eyebrow" id="phase-kicker">Phase 01</p>
+              <h2 id="phase-title">Intake</h2>
+            </div>
+            <div class="score-card">
+              <span>Quality score</span>
+              <strong id="score">0</strong>
+            </div>
+          </header>
+
+          <div class="progress-track">
+            <div id="progress-fill"></div>
+          </div>
+
+          <section class="screen is-active" id="intake">
+            <div class="grid two">
+              <label class="field">
+                <span>Application or patent number</span>
+                <input id="application-number" placeholder="e.g. CA 3,123,456" />
+              </label>
+              <label class="field">
+                <span>Claim set under examination</span>
+                <input id="claim-set" placeholder="Latest amended claims, 2026-04-22" />
+              </label>
+            </div>
+            <div class="grid two tall">
+              <label class="field">
+                <span>Paste claims</span>
+                <textarea id="claims-input" placeholder="1. A system comprising...&#10;2. The system of claim 1, wherein..."></textarea>
+              </label>
+              <label class="field">
+                <span>Paste description</span>
+                <textarea id="description-input" placeholder="The disclosure relates to... Include passages that may support the claims."></textarea>
+              </label>
+            </div>
+            <div class="actions">
+              <button class="primary" id="load-sample">Load Sample Case</button>
+              <button class="primary dark" id="build-case">Build Examination Package</button>
+            </div>
+            <div class="notice">
+              <strong>Demo guardrail:</strong> suggestions are simulated for workflow
+              validation and should not be treated as examination findings.
+            </div>
+            <div class="api-status" id="api-status" role="status"></div>
+          </section>
+
+          <section class="screen" id="first-pass">
+            <div class="split">
+              <article class="reading-card">
+                <p class="eyebrow">Independent claim preview</p>
+                <div id="claim-preview" class="claim-preview empty">Build the package to preview parsed claims.</div>
+                <div class="ai-pass-preview">
+                  <p class="eyebrow">AI defect inventory</p>
+                  <div id="ai-pass-list" class="mini-list"></div>
+                </div>
+              </article>
+              <article class="task-card">
+                <h3>AI first pass</h3>
+                <p>The AI creates the initial defect inventory. The examiner earns additional score by finding defects that are not already covered.</p>
+                <label class="field">
+                  <span>Likely inventive concept</span>
+                  <textarea id="inventive-concept" placeholder="In my view, the inventive concept is..."></textarea>
+                </label>
+                <div class="first-pass-intro">
+                  <div>
+                    <span class="section-label">Examiner challenge lanes</span>
+                    <p>Add only defects you believe the AI missed. Each examiner-added lane increases the score.</p>
+                  </div>
+                  <span class="pill subtle" id="first-pass-count">0 examiner-added</span>
+                </div>
+                <div id="first-pass-grid" class="first-pass-grid"></div>
+                <button class="primary dark" id="complete-first-pass">Submit Examiner Challenge</button>
+              </article>
+            </div>
+          </section>
+
+          <section class="screen" id="challenge">
+            <div class="challenge-banner">
+              <div>
+                <p class="eyebrow">AI first-pass defects</p>
+                <h3>Accept, reject, modify, or mark each AI-found defect uncertain.</h3>
+              </div>
+              <span id="challenge-status">Build package first</span>
+            </div>
+            <div id="suggestion-list" class="cards"></div>
+          </section>
+
+          <section class="screen" id="defects">
+            <div class="section-intro">
+              <div>
+                <p class="eyebrow">Structured review</p>
+                <h3>Defect categories from the Canadian taxonomy</h3>
+              </div>
+              <span class="pill" id="defect-count">0 reviewed</span>
+            </div>
+            <div id="defect-grid" class="defect-grid"></div>
+          </section>
+
+          <section class="screen" id="search">
+            <div class="section-intro">
+              <div>
+                <p class="eyebrow">Examiner-controlled search</p>
+                <h3>Queries generated from approved claim features</h3>
+              </div>
+              <button class="secondary" id="generate-search">Generate Demo Candidates</button>
+            </div>
+            <div id="query-list" class="query-list"></div>
+            <div id="candidate-list" class="cards"></div>
+          </section>
+
+          <section class="screen" id="analysis">
+            <div class="section-intro">
+              <div>
+                <p class="eyebrow">Patentability analysis</p>
+                <h3>Separate novelty mapping from obviousness reasoning</h3>
+              </div>
+              <span class="pill">MVP chart</span>
+            </div>
+            <div id="analysis-table" class="analysis-table"></div>
+          </section>
+
+          <section class="screen" id="closeout">
+            <div class="section-intro">
+              <div>
+                <p class="eyebrow">Closeout checklist</p>
+                <h3>Quality checks before summary</h3>
+              </div>
+              <button class="secondary" id="refresh-checklist">Refresh Checklist</button>
+            </div>
+            <div id="checklist" class="checklist"></div>
+          </section>
+
+          <section class="screen" id="report">
+            <div class="section-intro">
+              <div>
+                <p class="eyebrow">Copy-ready office action text</p>
+                <h3>Canadian examiner-style defect wording</h3>
+              </div>
+              <div class="actions compact">
+                <button class="secondary" id="refresh-report">Regenerate Text</button>
+                <button class="primary dark" id="copy-report">Copy Text</button>
+              </div>
+            </div>
+            <div class="report-layout">
+              <article class="report-guidance">
+                <h3>Drafting guardrails</h3>
+                <p>Use this as a working draft for report preparation. Replace placeholders, confirm every statutory basis, and keep only examiner-adopted defects.</p>
+                <div id="report-status" class="api-status" role="status"></div>
+              </article>
+              <label class="field report-editor">
+                <span>Editable report text</span>
+                <textarea id="report-text" spellcheck="true"></textarea>
+              </label>
+            </div>
+          </section>
+
+          <section class="screen" id="summary">
+            <div class="summary-grid">
+              <article class="summary-card">
+                <p class="eyebrow">Session summary</p>
+                <h3 id="summary-title">No session yet</h3>
+                <p id="summary-copy">Build a package and work through the flow to generate the summary.</p>
+              </article>
+              <article class="summary-card accent">
+                <p class="eyebrow">Judgment trail</p>
+                <div id="judgment-trail"></div>
+              </article>
+            </div>
+          </section>
+
+          <footer class="panel-footer">
+            <button class="secondary" id="prev-phase">Back</button>
+            <button class="primary" id="next-phase">Next Phase</button>
+          </footer>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
