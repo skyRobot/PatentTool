@@ -395,6 +395,31 @@ textarea:focus {
   background: rgba(23, 32, 27, 0.06);
 }
 
+.ai-pass-preview {
+  margin-top: 22px;
+  border-top: 1px solid rgba(23, 32, 27, 0.1);
+  padding-top: 18px;
+}
+
+.mini-list {
+  display: grid;
+  gap: 10px;
+}
+
+.mini-item {
+  display: grid;
+  gap: 5px;
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(49, 95, 115, 0.08);
+}
+
+.mini-item span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
 .task-card p,
 .suggestion p,
 .defect-card p,

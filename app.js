@@ -1,7 +1,7 @@
 const phases = [
   { id: "intake", title: "Intake", kicker: "Phase 01" },
-  { id: "first-pass", title: "Examiner First Pass", kicker: "Phase 02" },
-  { id: "challenge", title: "AI Challenge Reveal", kicker: "Phase 03" },
+  { id: "first-pass", title: "AI First Pass", kicker: "Phase 02" },
+  { id: "challenge", title: "Examiner Challenge", kicker: "Phase 03" },
   { id: "defects", title: "Defect Review", kicker: "Phase 04" },
   { id: "search", title: "Prior-Art Search", kicker: "Phase 05" },
   { id: "analysis", title: "Patentability Analysis", kicker: "Phase 06" },
@@ -141,6 +141,8 @@ function createSuggestions() {
       title: "Potentially unclear threshold language",
       detail: `Claim ${firstClaim} uses “crop stress threshold”. The description gives examples, but the boundary of the threshold may need examiner review.`,
       evidence: "Claim language + description threshold profiles",
+      claimNumbers: [firstClaim],
+      confidence: "high",
       decision: null,
     },
     {
@@ -149,6 +151,48 @@ function createSuggestions() {
       title: "Support check for predicted evapotranspiration",
       detail: "The description lists inputs for an estimate. Confirm whether that passage supports the breadth of the calculated value in the claim.",
       evidence: "Description paragraph mentioning temperature, humidity, solar radiation, and wind speed",
+      claimNumbers: [firstClaim, "4"],
+      confidence: "medium",
+      decision: null,
+    },
+    {
+      id: "clarity-user-limit",
+      type: "Clarity",
+      title: "Ambiguous comparison between threshold and user-defined limit",
+      detail: "Claim 2 states that an alert is sent when the crop stress threshold exceeds a user-defined limit. It is unclear whether the calculated stress value, the threshold, or another parameter is being compared.",
+      evidence: "Claim 2 alert condition",
+      claimNumbers: ["2"],
+      confidence: "high",
+      decision: null,
+    },
+    {
+      id: "support-mobile-alert",
+      type: "Support",
+      title: "Mobile alert support should be pinned to a passage",
+      detail: "The description says the controller may send a notification to a user's mobile device, but the examiner should confirm whether that supports the full alert condition as claimed.",
+      evidence: "Description notification sentence and claim 2",
+      claimNumbers: ["2"],
+      confidence: "medium",
+      decision: null,
+    },
+    {
+      id: "method-actor",
+      type: "Clarity",
+      title: "Method claim lacks clear actor or operating environment",
+      detail: "Claim 4 recites receiving data, calculating a value, comparing, and modifying a schedule, but does not clearly identify the actor or system component performing the steps.",
+      evidence: "Claim 4 method steps",
+      claimNumbers: ["4"],
+      confidence: "medium",
+      decision: null,
+    },
+    {
+      id: "formal-drawings",
+      type: "Formalities",
+      title: "Drawing support should be checked for system components",
+      detail: "The system claim recites a sensor, receiver, controller, remote server, and mobile device interactions. Confirm whether the drawings and numbering support those relationships.",
+      evidence: "Claims 1-3 component relationships",
+      claimNumbers: ["1", "2", "3"],
+      confidence: "medium",
       decision: null,
     },
     {
@@ -165,10 +209,11 @@ function createSuggestions() {
 function updateScore() {
   const decidedSuggestions = state.suggestions.filter((item) => item.decision).length;
   const reviewedDefects = Object.values(state.defectDecisions).filter(Boolean).length;
-  const firstPass = state.firstPassLocked ? 15 : 0;
+  const examinerFinds = Object.values(state.firstPassNotes).filter((note) => note.trim()).length;
+  const challengeSubmitted = state.firstPassLocked ? 10 : 0;
   const candidates = state.candidates.filter((item) => item.relevance).length * 4;
   const reportReady = $("#report-text")?.value.trim() ? 10 : 0;
-  state.score = firstPass + decidedSuggestions * 10 + reviewedDefects * 4 + candidates + reportReady;
+  state.score = challengeSubmitted + decidedSuggestions * 8 + examinerFinds * 12 + reviewedDefects * 4 + candidates + reportReady;
   $("#score").textContent = state.score;
 }
 
@@ -181,7 +226,7 @@ function renderFirstPassFields() {
           <textarea
             id="first-pass-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}"
             data-first-pass-note="${label}"
-            placeholder="Add examiner notes for ${label.toLowerCase()}, or leave blank if no issue is seen."
+            placeholder="Add a defect the AI first pass missed, or leave blank if the AI covered this lane."
           >${escapeHtml(state.firstPassNotes[label] || "")}</textarea>
         </label>
       `,
@@ -194,7 +239,7 @@ function updateFirstPassCount() {
   state.selectedConcerns = new Set(
     concernTypes.filter((label) => (state.firstPassNotes[label] || "").trim()),
   );
-  $("#first-pass-count").textContent = `${state.selectedConcerns.size} noted`;
+  $("#first-pass-count").textContent = `${state.selectedConcerns.size} examiner-added`;
 }
 
 function renderClaims() {
@@ -220,12 +265,30 @@ function renderClaims() {
     .join("");
 }
 
+function renderAiPassPreview() {
+  const list = $("#ai-pass-list");
+  if (!list) return;
+  list.innerHTML = state.suggestions.length
+    ? state.suggestions
+        .slice(0, 6)
+        .map(
+          (item) => `
+            <div class="mini-item">
+              <strong>${escapeHtml(item.title)}</strong>
+              <span>${escapeHtml(item.type)}${item.claimNumbers?.length ? ` · claim ${item.claimNumbers.map(escapeHtml).join(", ")}` : ""}</span>
+            </div>
+          `,
+        )
+        .join("")
+    : `<div class="mini-item"><strong>No AI defects yet</strong><span>Build the examination package to generate the first pass.</span></div>`;
+}
+
 function renderSuggestions() {
   const list = $("#suggestion-list");
-  $("#challenge-status").textContent = state.firstPassLocked ? "Challenge open" : "First pass required";
+  $("#challenge-status").textContent = state.suggestions.length ? "AI first pass ready" : "Build package first";
 
-  if (!state.firstPassLocked) {
-    list.innerHTML = `<article class="suggestion"><h3>AI challenge is hidden</h3><p>Complete and lock the examiner first pass before suggestions are revealed.</p></article>`;
+  if (!state.suggestions.length) {
+    list.innerHTML = `<article class="suggestion"><h3>No AI defects yet</h3><p>Build the package to generate the simulated AI first pass.</p></article>`;
     return;
   }
 
@@ -394,8 +457,9 @@ function renderAnalysis() {
 function renderChecklist() {
   const checks = [
     ["Package created", state.claims.length > 0, "Claims and description have been pasted and parsed."],
-    ["First pass locked", state.firstPassLocked, "Examiner-authored observations exist before AI reveal."],
-    ["AI suggestions reviewed", state.suggestions.length && state.suggestions.every((item) => item.decision), "Each simulated AI suggestion has a decision."],
+    ["AI first pass generated", state.suggestions.length >= 5, "The demo starts with at least five AI-identified defect candidates."],
+    ["Examiner challenge submitted", state.firstPassLocked, "Examiner has had a chance to add defects the AI missed."],
+    ["AI defects reviewed", state.suggestions.length && state.suggestions.every((item) => item.decision), "Each simulated AI defect has an examiner decision."],
     ["Defect categories reviewed", Object.values(state.defectDecisions).filter(Boolean).length >= 5, "Most core categories have been considered."],
     ["Evidence trail started", state.candidates.some((item) => item.relevance), "Prior-art candidates have examiner relevance decisions."],
     ["Report text prepared", Boolean($("#report-text")?.value.trim()), "Copy-ready wording has been generated or drafted for the report."],
@@ -548,7 +612,7 @@ function buildFirstPassNarrative() {
     })
     .filter(Boolean);
 
-  return [concept ? `Inventive concept: ${concept}` : "", ...noteLines]
+  return [concept ? `Inventive concept: ${concept}` : "", noteLines.length ? "Examiner-added missed defects:" : "", ...noteLines]
     .filter(Boolean)
     .join("\n");
 }
@@ -563,6 +627,7 @@ function buildCase() {
   state.candidates = [];
   state.reportTextEdited = false;
   renderClaims();
+  renderAiPassPreview();
   renderSuggestions();
   renderSearch();
   renderAnalysis();
@@ -604,12 +669,13 @@ async function runAiReview() {
     state.suggestions = normalizeSuggestions(payload.suggestions);
     state.claimInsights = payload.claimInsights || [];
     state.searchQueries = payload.searchQueries || [];
+    renderAiPassPreview();
     renderSuggestions();
     renderClaims();
     renderSearch();
     renderReportText({ force: !state.reportTextEdited });
     updateScore();
-    setApiStatus("Perplexity review loaded. Lock the first pass to reveal and judge the AI suggestions.", "ok");
+    setApiStatus("Perplexity review loaded as the AI first pass. Examiner challenge can now add missed defects.", "ok");
   } catch (error) {
     setApiStatus(error.message, "error");
   }
@@ -662,6 +728,7 @@ function init() {
   });
   renderFirstPassFields();
   renderClaims();
+  renderAiPassPreview();
   renderSuggestions();
   renderDefects();
   renderSearch();
@@ -691,6 +758,7 @@ function init() {
   $("#complete-first-pass").addEventListener("click", () => {
     state.firstPassLocked = true;
     if (!state.suggestions.length) state.suggestions = createSuggestions();
+    renderAiPassPreview();
     renderSuggestions();
     updateScore();
     switchPhase(2);

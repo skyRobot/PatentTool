@@ -13,15 +13,15 @@
           <p class="eyebrow">Canadian patent examination prototype</p>
           <h1>Examination Flow</h1>
           <p class="hero-copy">
-            A quality-first live demo where the examiner leads, AI challenges, and
-            every adopted issue must be backed by evidence and reasoning.
+            Version 3 starts with an AI defect pass, then rewards examiners for
+            finding what the AI missed and backing every adopted issue with evidence.
           </p>
         </div>
         <aside class="trust-card">
           <span>Public demo mode</span>
           <strong>Dummy data only, no external API calls.</strong>
           <p>Paste claims or load the sample case to walk through the examination
-            flow with simulated AI challenger suggestions.</p>
+            flow with simulated AI first-pass defects.</p>
         </aside>
       </section>
 
@@ -33,11 +33,11 @@
           </button>
           <button class="phase" data-phase="first-pass">
             <span>02</span>
-            First Pass
+            AI First Pass
           </button>
           <button class="phase" data-phase="challenge">
             <span>03</span>
-            AI Challenge
+            Examiner Challenge
           </button>
           <button class="phase" data-phase="defects">
             <span>04</span>
@@ -118,23 +118,27 @@
               <article class="reading-card">
                 <p class="eyebrow">Independent claim preview</p>
                 <div id="claim-preview" class="claim-preview empty">Build the package to preview parsed claims.</div>
+                <div class="ai-pass-preview">
+                  <p class="eyebrow">AI defect inventory</p>
+                  <div id="ai-pass-list" class="mini-list"></div>
+                </div>
               </article>
               <article class="task-card">
-                <h3>Examiner first pass</h3>
-                <p>Record your view before AI suggestions appear. This protects against anchoring and creates the baseline for challenge mode.</p>
+                <h3>AI first pass</h3>
+                <p>The AI creates the initial defect inventory. The examiner earns additional score by finding defects that are not already covered.</p>
                 <label class="field">
                   <span>Likely inventive concept</span>
                   <textarea id="inventive-concept" placeholder="In my view, the inventive concept is..."></textarea>
                 </label>
                 <div class="first-pass-intro">
                   <div>
-                    <span class="section-label">Initial defect scan</span>
-                    <p>Capture each concern in its own lane so the baseline is easier to review before the AI reveal.</p>
+                    <span class="section-label">Examiner challenge lanes</span>
+                    <p>Add only defects you believe the AI missed. Each examiner-added lane increases the score.</p>
                   </div>
-                  <span class="pill subtle" id="first-pass-count">0 noted</span>
+                  <span class="pill subtle" id="first-pass-count">0 examiner-added</span>
                 </div>
                 <div id="first-pass-grid" class="first-pass-grid"></div>
-                <button class="primary dark" id="complete-first-pass">Lock First Pass & Reveal AI</button>
+                <button class="primary dark" id="complete-first-pass">Submit Examiner Challenge</button>
               </article>
             </div>
           </section>
@@ -142,10 +146,10 @@
           <section class="screen" id="challenge">
             <div class="challenge-banner">
               <div>
-                <p class="eyebrow">AI challenger reveal</p>
-                <h3>Compare, correct, or reject the AI challenger suggestions.</h3>
+                <p class="eyebrow">AI first-pass defects</p>
+                <h3>Accept, reject, modify, or mark each AI-found defect uncertain.</h3>
               </div>
-              <span id="challenge-status">First pass required</span>
+              <span id="challenge-status">Build package first</span>
             </div>
             <div id="suggestion-list" class="cards"></div>
           </section>

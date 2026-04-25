@@ -1,6 +1,6 @@
 # Examination Flow MVP Demo
 
-This is a lightweight live demo for the planning-doc MVP. The public version runs with dummy data only, so it can be hosted as a static site without API keys or backend infrastructure.
+This is a lightweight live demo for the planning-doc MVP. Version 3 starts with an AI first pass, then lets the examiner score extra credit by identifying defects the AI missed. The public version runs with dummy data only, so it can be hosted as a static site without API keys or backend infrastructure.
 
 ## Run locally
 
@@ -22,10 +22,11 @@ For static hosting, upload `index.html`, `styles.css`, `app.js`, and optionally 
 
 1. Load the sample case or paste claims and a description.
 2. Build the examination package.
-3. Complete the examiner first pass before revealing simulated AI suggestions.
-4. Accept, reject, modify, or mark AI suggestions uncertain.
-5. Generate demo prior-art candidates and preliminary mapping cues.
-6. Review the claim map, defect categories, search candidates, analysis chart, closeout checklist, and summary.
+3. Review the simulated AI first-pass defect inventory, which includes at least five example defects.
+4. Add examiner-found defects that the AI missed to increase the quality score.
+5. Accept, reject, modify, or mark AI defects uncertain.
+6. Generate demo prior-art candidates and preliminary mapping cues.
+7. Review the claim map, defect categories, search candidates, analysis chart, closeout checklist, and summary.
 
 ## Data note
 
