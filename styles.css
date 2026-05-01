@@ -338,6 +338,43 @@ textarea:focus {
   background: rgba(215, 168, 79, 0.14);
 }
 
+.abstract-workbench {
+  margin-top: 16px;
+  border: 1px solid rgba(49, 95, 115, 0.18);
+  border-radius: 28px;
+  padding: 20px;
+  background:
+    linear-gradient(135deg, rgba(120, 148, 111, 0.13), rgba(49, 95, 115, 0.1)),
+    rgba(255, 250, 240, 0.5);
+}
+
+.abstract-workbench textarea {
+  min-height: 150px;
+}
+
+.upload-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 13px 18px;
+  color: var(--ink);
+  background: rgba(255, 250, 240, 0.72);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
 .api-status {
   min-height: 24px;
   margin-top: 12px;
@@ -727,7 +764,8 @@ textarea:focus {
   .panel-footer,
   .section-intro,
   .challenge-banner,
-  .first-pass-intro {
+  .first-pass-intro,
+  .abstract-workbench .actions {
     align-items: stretch;
     flex-direction: column;
   }

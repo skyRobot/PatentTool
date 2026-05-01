@@ -13,8 +13,9 @@
           <p class="eyebrow">Canadian patent examination prototype</p>
           <h1>Examination Flow</h1>
           <p class="hero-copy">
-            Version 3 starts with an AI defect pass, then rewards examiners for
-            finding what the AI missed and backing every adopted issue with evidence.
+            Version 4 adds abstract intake with French translation, then starts
+            the AI defect pass and rewards examiners for backing every adopted
+            issue with evidence.
           </p>
         </div>
         <aside class="trust-card">
@@ -101,6 +102,30 @@
                 <span>Paste description</span>
                 <textarea id="description-input" placeholder="The disclosure relates to... Include passages that may support the claims."></textarea>
               </label>
+            </div>
+            <div class="abstract-workbench">
+              <div class="section-intro">
+                <div>
+                  <p class="eyebrow">Version 4 abstract option</p>
+                  <h3>Upload an abstract and translate it to French</h3>
+                </div>
+                <label class="upload-button" for="abstract-file">Upload Abstract</label>
+                <input id="abstract-file" class="visually-hidden" type="file" accept=".txt,.md,.text,text/plain,text/markdown" />
+              </div>
+              <div class="grid two tall">
+                <label class="field">
+                  <span>English abstract</span>
+                  <textarea id="abstract-input" placeholder="Upload a text abstract or paste the abstract here."></textarea>
+                </label>
+                <label class="field">
+                  <span>French translation</span>
+                  <textarea id="abstract-translation" placeholder="Translation appears here after upload or when Translate Abstract is selected."></textarea>
+                </label>
+              </div>
+              <div class="actions">
+                <button class="secondary" id="translate-abstract" type="button">Translate Abstract</button>
+                <span class="api-status" id="abstract-status" role="status"></span>
+              </div>
             </div>
             <div class="actions">
               <button class="primary" id="load-sample">Load Sample Case</button>

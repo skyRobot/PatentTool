@@ -44,6 +44,59 @@ The controller may calculate an evapotranspiration estimate using temperature, h
 
 Examples describe tomato and corn fields using threshold profiles stored in a memory. The system may reduce watering before forecast rainfall and increase watering during a heat event.`;
 
+const sampleAbstract = `An irrigation control system receives soil moisture data and weather forecast data, calculates a predicted evapotranspiration value, and adjusts a watering schedule based on a crop stress threshold. The system may send an alert to a mobile device when the threshold indicates crop stress.`;
+
+const translationGlossary = [
+  ["computer-implemented", "mis en oeuvre par ordinateur"],
+  ["irrigation control system", "système de commande d'irrigation"],
+  ["soil moisture data", "données d'humidité du sol"],
+  ["soil moisture sensor", "capteur d'humidité du sol"],
+  ["weather forecast data", "données de prévision météorologique"],
+  ["forecast precipitation data", "données de précipitations prévues"],
+  ["predicted evapotranspiration value", "valeur d'évapotranspiration prévue"],
+  ["evapotranspiration estimate", "estimation de l'évapotranspiration"],
+  ["crop stress threshold", "seuil de stress de la culture"],
+  ["crop stress", "stress de la culture"],
+  ["watering schedule", "programme d'arrosage"],
+  ["mobile device", "appareil mobile"],
+  ["remote server", "serveur distant"],
+  ["temperature", "température"],
+  ["humidity", "humidité"],
+  ["solar radiation", "rayonnement solaire"],
+  ["wind speed", "vitesse du vent"],
+  ["controller", "contrôleur"],
+  ["sensor", "capteur"],
+  ["system", "système"],
+  ["method", "procédé"],
+  ["device", "dispositif"],
+  ["alert", "alerte"],
+  ["notification", "notification"],
+  ["receives", "reçoit"],
+  ["receiving", "la réception de"],
+  ["obtains", "obtient"],
+  ["calculates", "calcule"],
+  ["calculating", "le calcul de"],
+  ["compares", "compare"],
+  ["comparing", "la comparaison de"],
+  ["adjusts", "ajuste"],
+  ["modifies", "modifie"],
+  ["modifying", "la modification de"],
+  ["transmits", "transmet"],
+  ["sends", "envoie"],
+  ["send", "envoyer"],
+  ["indicates", "indique"],
+  ["based on", "sur la base de"],
+  ["when", "lorsque"],
+  ["to", "à"],
+  ["wherein", "dans lequel"],
+  ["comprising", "comprenant"],
+  ["and", "et"],
+  ["or", "ou"],
+  ["the", "le"],
+  ["a", "un"],
+  ["an", "un"],
+];
+
 const state = {
   current: 0,
   claims: [],
@@ -57,6 +110,8 @@ const state = {
   firstPassNotes: {},
   defectDecisions: {},
   reportTextEdited: false,
+  abstractSource: "",
+  abstractTranslation: "",
   score: 0,
 };
 
@@ -74,6 +129,13 @@ function escapeHtml(value) {
 
 function setApiStatus(message, tone = "neutral") {
   const status = $("#api-status");
+  if (!status) return;
+  status.textContent = message;
+  status.dataset.tone = tone;
+}
+
+function setAbstractStatus(message, tone = "neutral") {
+  const status = $("#abstract-status");
   if (!status) return;
   status.textContent = message;
   status.dataset.tone = tone;
@@ -129,6 +191,78 @@ function parseClaims(text) {
       .slice(0, 5);
     return { number, text, dependency, category, limitations };
   });
+}
+
+function translateSentenceToFrench(sentence) {
+  let translated = ` ${sentence.trim()} `;
+
+  const samplePattern =
+    /^An irrigation control system receives soil moisture data and weather forecast data, calculates a predicted evapotranspiration value, and adjusts a watering schedule based on a crop stress threshold\.$/i;
+  if (samplePattern.test(sentence.trim())) {
+    return "Un système de commande d'irrigation reçoit des données d'humidité du sol et des données de prévision météorologique, calcule une valeur d'évapotranspiration prévue et ajuste un programme d'arrosage en fonction d'un seuil de stress de la culture.";
+  }
+
+  const alertPattern = /^The system may send an alert to a mobile device when the threshold indicates crop stress\.$/i;
+  if (alertPattern.test(sentence.trim())) {
+    return "Le système peut envoyer une alerte à un appareil mobile lorsque le seuil indique un stress de la culture.";
+  }
+
+  translationGlossary.forEach(([english, french]) => {
+    const pattern = new RegExp(`\\b${english.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "gi");
+    translated = translated.replace(pattern, french);
+  });
+
+  return translated
+    .replace(/\bmay\b/gi, "peut")
+    .replace(/\bdata\b/gi, "données")
+    .replace(/\bclaim\b/gi, "revendication")
+    .replace(/\bclaims\b/gi, "revendications")
+    .replace(/\bun données\b/gi, "des données")
+    .replace(/\bun valeur\b/gi, "une valeur")
+    .replace(/\bun alerte\b/gi, "une alerte")
+    .replace(/\ble système\b/gi, "Le système")
+    .replace(/\bsur la base de un\b/gi, "en fonction d'un")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function translateAbstractText(text) {
+  const cleanText = text.trim();
+  if (!cleanText) return "";
+
+  const paragraphs = cleanText.split(/\n{2,}/);
+  const translatedParagraphs = paragraphs.map((paragraph) => {
+    const sentences = paragraph
+      .replace(/\s+/g, " ")
+      .split(/(?<=[.!?])\s+/)
+      .filter(Boolean);
+    return sentences.map(translateSentenceToFrench).join(" ");
+  });
+
+  return translatedParagraphs.join("\n\n");
+}
+
+function syncAbstractState() {
+  state.abstractSource = $("#abstract-input")?.value.trim() || "";
+  state.abstractTranslation = $("#abstract-translation")?.value.trim() || "";
+}
+
+function runAbstractTranslation({ quiet = false } = {}) {
+  const abstractInput = $("#abstract-input");
+  const translationInput = $("#abstract-translation");
+  if (!abstractInput || !translationInput) return;
+
+  const abstractText = abstractInput.value.trim();
+  if (!abstractText) {
+    setAbstractStatus("Upload or paste an abstract before translating.", "warn");
+    return;
+  }
+
+  translationInput.value = translateAbstractText(abstractText);
+  syncAbstractState();
+  renderChecklist();
+  if (!state.reportTextEdited) renderReportText({ force: true });
+  if (!quiet) setAbstractStatus("French abstract translation generated locally for examiner review.", "ok");
 }
 
 function createSuggestions() {
@@ -457,6 +591,7 @@ function renderAnalysis() {
 function renderChecklist() {
   const checks = [
     ["Package created", state.claims.length > 0, "Claims and description have been pasted and parsed."],
+    ["Abstract translated", Boolean(state.abstractSource && state.abstractTranslation), "An uploaded or pasted abstract has a French working translation."],
     ["AI first pass generated", state.suggestions.length >= 5, "The demo starts with at least five AI-identified defect candidates."],
     ["Examiner challenge submitted", state.firstPassLocked, "Examiner has had a chance to add defects the AI missed."],
     ["AI defects reviewed", state.suggestions.length && state.suggestions.every((item) => item.decision), "Each simulated AI defect has an examiner decision."],
@@ -525,9 +660,22 @@ function formatCategoryParagraph({ title, decision }) {
 function buildReportText() {
   const appNumber = $("#application-number").value.trim() || "[application number]";
   const claimSet = $("#claim-set").value.trim() || "[claim set/date]";
+  syncAbstractState();
   const adoptedSuggestions = getAdoptedSuggestions();
   const reviewedDefects = getReviewedDefects();
   const relevantCandidates = state.candidates.filter((candidate) => candidate.relevance === "Relevant");
+  const abstractText = state.abstractSource
+    ? [
+        "ABSTRACT TRANSLATION - WORKING DRAFT",
+        "",
+        "English abstract:",
+        state.abstractSource,
+        "",
+        "French abstract:",
+        state.abstractTranslation || "[translate the abstract before finalizing]",
+        "",
+      ]
+    : [];
   const opening = [
     "EXAMINER'S REPORT - DRAFT DEFECT WORDING",
     "",
@@ -554,6 +702,8 @@ function buildReportText() {
 
   return [
     ...opening,
+    "",
+    ...abstractText,
     "",
     "DEFECTS / OBJECTIONS FOR REPORT",
     ...defectText,
@@ -582,6 +732,7 @@ function renderReportText({ force = false } = {}) {
 
 function renderSummary() {
   const appNumber = $("#application-number").value || "Demo case";
+  syncAbstractState();
   const decisions = state.suggestions.reduce((total, item) => {
     if (item.decision) total[item.decision] = (total[item.decision] || 0) + 1;
     return total;
@@ -589,9 +740,11 @@ function renderSummary() {
   const reviewedDefects = Object.values(state.defectDecisions).filter(Boolean).length;
 
   $("#summary-title").textContent = `${appNumber} · first-pass examination note`;
-  $("#summary-copy").textContent = `${state.claims.length} claims parsed, ${reviewedDefects} defect categories reviewed, and ${state.candidates.filter((item) => item.relevance).length} prior-art candidates triaged. The examiner remains the source of truth for every adopted conclusion.`;
+  const abstractStatus = state.abstractTranslation ? "French abstract prepared" : "no abstract translation prepared";
+  $("#summary-copy").textContent = `${state.claims.length} claims parsed, ${reviewedDefects} defect categories reviewed, ${state.candidates.filter((item) => item.relevance).length} prior-art candidates triaged, and ${abstractStatus}. The examiner remains the source of truth for every adopted conclusion.`;
 
   $("#judgment-trail").innerHTML = [
+    ["Abstract translation", state.abstractTranslation ? "Prepared" : "Not prepared"],
     ["Examiner concerns", [...state.selectedConcerns].join(", ") || "None selected"],
     ["AI accepted", decisions.Accept || 0],
     ["AI rejected", decisions.Reject || 0],
@@ -618,6 +771,7 @@ function buildFirstPassNarrative() {
 }
 
 function buildCase() {
+  syncAbstractState();
   const claimsText = $("#claims-input").value;
   state.claims = parseClaims(claimsText);
   state.suggestions = createSuggestions();
@@ -743,9 +897,42 @@ function init() {
     $("#claim-set").value = "Latest amended claims · demo sample";
     $("#claims-input").value = sampleClaims;
     $("#description-input").value = sampleDescription;
+    $("#abstract-input").value = sampleAbstract;
+    runAbstractTranslation({ quiet: true });
+    setAbstractStatus("Sample abstract loaded and translated.", "ok");
   });
 
   $("#build-case").addEventListener("click", buildCase);
+  $("#translate-abstract").addEventListener("click", () => runAbstractTranslation());
+  $("#abstract-input").addEventListener("input", () => {
+    syncAbstractState();
+    setAbstractStatus(state.abstractSource ? "Abstract ready for translation." : "");
+    renderChecklist();
+  });
+  $("#abstract-translation").addEventListener("input", () => {
+    syncAbstractState();
+    renderChecklist();
+    if (!state.reportTextEdited) renderReportText({ force: true });
+  });
+  $("#abstract-file").addEventListener("change", async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.size > 120_000) {
+      setAbstractStatus("Choose a text abstract under 120 KB.", "warn");
+      event.target.value = "";
+      return;
+    }
+
+    try {
+      $("#abstract-input").value = await file.text();
+      runAbstractTranslation({ quiet: true });
+      setAbstractStatus(`${file.name} uploaded and translated.`, "ok");
+    } catch {
+      setAbstractStatus("Could not read that file. Use a plain text abstract.", "error");
+    } finally {
+      event.target.value = "";
+    }
+  });
   $("#run-ai-review")?.addEventListener("click", runAiReview);
 
   $("#first-pass-grid").addEventListener("input", (event) => {
